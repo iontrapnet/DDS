@@ -198,9 +198,9 @@ class ad9910:
         pb = 65535.
         if frequency == None:
             param = self.read(dut,reg)
-            return self._fs*(arr2int(param[4:]) / fb), arr2int(param[0:2]) / ab, arr2int(param[2:4]) / pb
+            return self._fs*(arr2int(param[4:]) / fb), arr2int(param[0:2]) / ab, 2*arr2int(param[2:4]) / pb
         else:
-            param = int2arr(ab*amplitude,2) + int2arr(pb*phase,2) + int2arr(fb*frequency/float(self._fs),4)
+            param = int2arr(ab*amplitude,2) + int2arr(0.5*pb*phase,2) + int2arr(fb*frequency/float(self._fs),4)
             self.write(dut,reg,param)
 
 if __name__ == '__main__':

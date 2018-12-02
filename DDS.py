@@ -65,13 +65,21 @@ class DDSCtrl:
         
         self.vbox = QVBoxLayout(self.group)
         self.freq = LVNumCtrl(self.vbox)
-        self.hbox = QHBoxLayout()
-        self.amp = LVNumCtrl(self.hbox)
+        
+        self.hbox0 = QHBoxLayout()
+        self.amp = LVNumCtrl(self.hbox0)
         self.pll = QCheckBox('PLL',self.group)
         self.pll.setLayoutDirection(Qt.RightToLeft)
         self.pll.setFont(QFont("Microsoft YaHei", 12))
-        self.hbox.addWidget(self.pll)
-        self.vbox.addLayout(self.hbox)
+        self.hbox0.addWidget(self.pll)
+        self.vbox.addLayout(self.hbox0)
+        
+        self.hbox1 = QHBoxLayout()
+        self.phase = LVNumCtrl(self.hbox1)
+        self.profile = QComboBox(self.group)
+        self.profile.addItems([str(i) for i in range(8)])
+        self.hbox1.addWidget(self.profile)
+        self.vbox.addLayout(self.hbox1)
         
         self.freq.setLabel('Freq')
         #self.freq.spin.setSuffix(' MHz')
@@ -83,6 +91,12 @@ class DDSCtrl:
         self.amp.spin.setRange(0,1)
         self.amp.spin.onValueChanged(self.setAmp)
         
+        self.phase.setLabel('Phase')
+        self.phase.spin.setRange(0,2)
+        self.phase.spin.onValueChanged(self.setPhase)
+        
+        self.profile.currentIndexChanged.connect(self.changeProfile)
+        
         self.dut = None
         self.timer = None
     
@@ -93,7 +107,7 @@ class DDSCtrl:
         self.group.setEnabled(state)
         if state:
             self.timer = QTimer()
-            self.timer.timeout.connect(self.getStatus)
+            self.timer.timeout.connect(self.checkPLL)
             self.timer.start(1000)
         elif self.timer != None:
             self.timer.stop()
@@ -103,30 +117,47 @@ class DDSCtrl:
         
     def setID(self, dut):
         self.dut = dut
+    
+    def setProfile(self):
+        dds.parameter(self.dut, 1e6*self.freq.value(), self.amp.value(), self.phase.value(), int(self.profile.currentText()))
         
     def setFreq(self, freq = None):
         if freq == None:
             freq = self.freq.value()
         else:
             self.freq.setValue(freq)
-        #print('board {0} set freq {1}'.format(self.dut, freq))
-        dds.parameter(self.dut, 1e6*self.freq.value(), self.amp.value())
+        self.setProfile()
 
     def setAmp(self, amp = None):
         if amp == None:
             amp = self.amp.value()
         else:
             self.amp.setValue(amp)
-        #print('board {0} set amp {1}'.format(self.dut, amp))
-        dds.parameter(self.dut, 1e6*self.freq.value(), self.amp.value())
+        self.setProfile()
     
-    def getStatus(self):
+    def setPhase(self, phase = None):
+        if phase == None:
+            phase = self.phase.value()
+        else:
+            self.phase.setValue(phase)
+        self.setProfile()
+        
+    def checkPLL(self):
         state = dds.pll_lock(self.dut)
-        #print('board {0} PLL status {1}'.format(self.dut,state))
         self.pll.setCheckState(state)
         if not state:
             dds.ConfigPort(self.dut)
-            dds.parameter(self.dut, 1e6*self.freq.value(), self.amp.value())
+            self.setProfile()
+    
+    def changeProfile(self, profile = None):
+        if profile == None:
+            profile = int(self.profile.currentText())
+        else:
+            self.profile.setCurrentIndex(profile)
+        freq,amp,phase = dds.parameter(self.dut, profile = profile)
+        self.freq.setValue(freq)
+        self.amp.setValue(amp)
+        self.phase.setValue(phase)
             
 class Window(QWidget):
     def __init__(self):
@@ -185,11 +216,19 @@ class Window(QWidget):
                         val = dds.freq.value()
                     elif cmd.startswith('AMP'):
                         val = dds.amp.value()
+                    elif cmd.startswith('PHASE'):
+                        val = dds.phase.value()
+                    elif cmd.startswith('PROFILE'):
+                        val = int(dds.profile.currentText())
                     c.write('{0}\r\n'.format(val,'%lf'))
                 elif cmd.startswith('FREQ'):
                     dds.setFreq(float(s[2]))
                 elif cmd.startswith('AMP'):
                     dds.setAmp(float(s[2]))
+                elif cmd.startswith('PHASE'):
+                    dds.setPhase(float(s[2]))
+                elif cmd.startswith('PROFILE'):
+                    dds.changeProfile(int(s[2]))
     
     def close(self):
         for c in self.clients:
