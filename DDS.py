@@ -10,8 +10,9 @@ config = (
         ('Pumping',270,0.2,0.5),
         ('Cooling',260,0.2,0.5),
         ('Detection',270,0.4,0.5),
-        ('Raman1',200.027,0.2,0.5),
-        ('Raman2',200,1,1)
+        ('Horn',200.027,0.2,0.5),
+        ('Raman',200,1,1),
+        ('Lamp',180,0.5,1),
         )
 PORT = 9999
         
@@ -209,7 +210,7 @@ class Window(QWidget):
             if c.bytesAvailable() > 0:
                 s = str(c.readAll()).split()
                 cmd = s[0]
-                dds = self.dds[int(s[1])]
+                dds = self.dds[int(s[1]) - 2]
                 if cmd.endswith('?'):
                     val = 0
                     if cmd.startswith('FREQ'):
