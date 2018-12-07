@@ -6,14 +6,17 @@ from PyQt4.QtNetwork import *
 from AD9910 import ad9910
 
 # ID start from 2
-config = (
-        ('Pumping',270,0.2,0.5),
-        ('Cooling',260,0.2,0.5),
-        ('Detection',270,0.4,0.5),
-        ('Horn',200.027,0.2,0.5),
-        ('Raman',200,1,1),
-        ('Lamp',180,0.5,1),
-        )
+config = [
+        ['Pumping',0.5,(270,0.2,0)],
+        ['Cooling',0.5,(260,0.2,0)],
+        ['Detection',0.5,(270,0.4,0)],
+        ['Horn',0.5,(193.027,0.1,0),(193.027,0.1,0.5)],
+        ['Raman',1,(200,1,0)],
+        ['Lamp',0.8,(180,0.5,0)],
+        ]
+for i in range(len(config)):
+    config[i] += [(0,0,0)]*(10-len(config[i]))
+    
 PORT = 9999
         
 dds = ad9910()
@@ -120,7 +123,13 @@ class DDSCtrl:
         self.dut = dut
     
     def setProfile(self):
-        dds.parameter(self.dut, 1e6*self.freq.value(), self.amp.value(), self.phase.value(), int(self.profile.currentText()))
+        profile = int(self.profile.currentText())
+        freq = self.freq.value()
+        amp = self.amp.value()
+        phase = self.phase.value()
+        config[self.dut - 2][profile + 2] = (freq,amp,phase)
+        dds.parameter(self.dut, 1e6*freq, amp, phase, profile)
+        dds.change_profile(self.dut, profile)
         
     def setFreq(self, freq = None):
         if freq == None:
@@ -155,10 +164,13 @@ class DDSCtrl:
             profile = int(self.profile.currentText())
         else:
             self.profile.setCurrentIndex(profile)
-        freq,amp,phase = dds.parameter(self.dut, profile = profile)
+        freq,amp,phase = config[self.dut - 2][profile + 2]
+        #freq,amp,phase = dds.parameter(self.dut, profile = profile)
+        #print(freq,amp,phase)
         self.freq.setValue(freq)
         self.amp.setValue(amp)
         self.phase.setValue(phase)
+        self.setProfile()        
             
 class Window(QWidget):
     def __init__(self):
@@ -179,6 +191,7 @@ class Window(QWidget):
         for i in range(len(config)):
             self.dds.append(DDSCtrl(self))
             self.dds[i].setLabel(config[i][0])
+            self.dds[i].setMaxAmp(config[i][1])
             self.box.addWidget(self.dds[i].group)
             
         self.btnReload.clicked.connect(self.reload)
@@ -194,9 +207,10 @@ class Window(QWidget):
         for k in dds._handle:
             i = k - 2
             self.dds[i].setID(k)
-            self.dds[i].setFreq(config[i][1])
-            self.dds[i].setAmp(config[i][2])
-            self.dds[i].setMaxAmp(config[i][3])
+            profile = int(self.dds[i].profile.currentText())
+            for j in range(2,len(config[i])):
+                self.dds[i].changeProfile(j - 2)
+            self.dds[i].changeProfile(profile)
             self.dds[i].setEnabled(True)
     
     def accept(self):

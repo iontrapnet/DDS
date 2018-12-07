@@ -190,7 +190,14 @@ class ad9910:
         self._dll.SetAutoCSB(self._handle[dut],1)
         self._dll.SetPortValue(self._handle[dut],0,0x02)
         return returnData
-
+    
+    def change_profile(self, dut, profile):
+        value = c_ubyte(0)
+        self._dll.GetPortValue(self._handle[dut],4,byref(value))
+        value.value = (value.value & 0b11111000) + profile
+        #print(value.value)
+        self._dll.SetPortValue(self._handle[dut],4,value)
+        
     def parameter(self, dut, frequency = None, amplitude = 1, phase = 0, profile = 0):
         reg = 0xE + profile
         fb = 4294967296.
@@ -202,6 +209,7 @@ class ad9910:
         else:
             param = int2arr(ab*amplitude,2) + int2arr(0.5*pb*phase,2) + int2arr(fb*frequency/float(self._fs),4)
             self.write(dut,reg,param)
+            #self.change_profile(dut,profile)
 
 if __name__ == '__main__':
     dds=ad9910(True)
