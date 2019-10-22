@@ -5,7 +5,7 @@ import sys
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import pyqtSlot, QSize, QRect
+from PyQt5.QtCore import pyqtSlot, pyqtSignal,  QSize, QRect
 import numpy as np
 import time
 import re # Pattern match
@@ -21,7 +21,26 @@ dll.AD5372_Init()
 #AD5372.Init()
 #AD5372.DAC(0, 1)
 #AD5372.LDAC()
-    
+
+class LVSpinBox(QDoubleSpinBox):
+    stepChanged = pyqtSignal()
+
+    def stepBy(self, step):
+        value = self.value()
+        point = str(self.text()).find('.')
+        if point < 0:
+            point = self.text().length()
+        digit = point - self.lineEdit().cursorPosition()
+        if digit < 0:
+            digit += 1
+        self.setValue(value + step*(10**digit))
+        if self.value() != value:
+            self.stepChanged.emit()
+
+    def onValueChanged(self,func):
+        self.editingFinished.connect(func)
+        self.stepChanged.connect(func)
+            
 class DAC(QWidget):
     dataFile = "data.dat"
     def __init__(self):
@@ -35,7 +54,7 @@ class DAC(QWidget):
         self.loadData(True)
 
     def createChannels(self):
-        self.channels = [QtWidgets.QDoubleSpinBox() for i in range(32)]
+        self.channels = [None]*32
         gridLayout = QGridLayout()
         gridLayout.setVerticalSpacing(0)
         self.data = QGroupBox("Channels(DC1:1-5, DC2:6-10, RF1:11, RF2:12,Shutters:13-16)")
@@ -43,7 +62,7 @@ class DAC(QWidget):
         self.data.setContentsMargins(5, 5, 5, 5)
         # Data entries
         for i in range(32):
-            self.channels[i] = QDoubleSpinBox()
+            self.channels[i] = LVSpinBox()
             # self.channels[i].setGeometry(1, 1, 70, 20)
             self.channels[i].setDecimals(4)
             # self.channels[i].setMinimum(-10.0)
@@ -67,7 +86,7 @@ class DAC(QWidget):
         self.compensationFrame = QGroupBox("Compensation Combinations")
         self.compensationFrame.setGeometry(10, 10, 950, 40)
         self.compensationFrame.setContentsMargins(1, 1, 1, 1)
-        self.compensate = [[QDoubleSpinBox(), QPushButton('GO')], [QDoubleSpinBox(), QPushButton('GO')], [QDoubleSpinBox(), QPushButton('GO')], [QDoubleSpinBox(), QPushButton('GO')], [QDoubleSpinBox(), QPushButton('GO')]]
+        self.compensate = [[LVSpinBox(), QPushButton('GO')], [LVSpinBox(), QPushButton('GO')], [LVSpinBox(), QPushButton('GO')], [LVSpinBox(), QPushButton('GO')], [LVSpinBox(), QPushButton('GO')]]
         layout = QHBoxLayout()
         for i in range(len(self.compensate)):
             groupbox = QGroupBox()

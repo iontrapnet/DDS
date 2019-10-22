@@ -22,11 +22,14 @@ PORT = 9999
 dds = ad9910()
 
 class LVSpinBox(QDoubleSpinBox):
-    stepChanged = QtCore.pyqtSignal()
+    stepChanged = pyqtSignal()
 
     def stepBy(self, step):
         value = self.value()
-        digit = str(self.text()).find('.') - self.lineEdit().cursorPosition()
+        point = str(self.text()).find('.')
+        if point < 0:
+            point = self.text().length()
+        digit = point - self.lineEdit().cursorPosition()
         if digit < 0:
             digit += 1
         self.setValue(value + step*(10**digit))
