@@ -23,7 +23,7 @@ namespace ADI
                 Console.WriteLine("AD5372 is not connected!");
                 return false;
             }
-            if (!USB.LoadExternalRam("AD537xSPI.hex"))
+            if (!USB.LoadRAM("AD537xSPI.hex"))
             {
                 Console.WriteLine("downloading firmware failed!");
                 return false;
@@ -97,8 +97,8 @@ namespace ADI
         //[DllExport("AD5372_DAC")]
         public static bool DAC(int channel, double voltage)
         {
-            float vmax = 10;
-            float vmin = -10;
+            double vmax = 10;
+            double vmin = -10;
             ushort val = (ushort)(0xFFFF * (voltage / (vmax - vmin) + 0.5));
             byte idx = (byte)(64 * 3 + 8 * ((channel >> 3) + 1) + (channel & 7));
             return SPI((idx << 16) + val);
