@@ -28,7 +28,7 @@ class LVSpinBox(QDoubleSpinBox):
         value = self.value()
         point = str(self.text()).find('.')
         if point < 0:
-            point = self.text().length()
+            point = len(str(self.text()))
         digit = point - self.lineEdit().cursorPosition()
         if digit < 0:
             digit += 1
