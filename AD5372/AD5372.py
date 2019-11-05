@@ -212,16 +212,11 @@ class DAC(QWidget):
             if not data.size == 32:
                 print("data length is wrong!!!")
             for i in range(32):
-                try:
-                    # print(i)
-                    if not data[i] == self.channels[i].value():
-                        self.channels[i].setValue(data[i])
-                    else:
-                        if force_mode:
-                            self.set_voltage(i, data[i])
-                except requests.exceptions.RequestException as e:
-                    print(type(e))
-                    break
+                if not data[i] == self.channels[i].value():
+                    self.channels[i].setValue(data[i])
+                else:
+                    if force_mode:
+                        self.set_voltage(i, data[i])
         else:
             np.savetxt(self.dataFile, np.zeros(32))
             self.reset()
