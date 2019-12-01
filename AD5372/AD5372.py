@@ -13,7 +13,9 @@ import re # Pattern match
 #gacutil.exe /i CyUSB.dll
 from ctypes import *
 dll = cdll.LoadLibrary('AD5372.dll')
+dll.AD5372_Open()
 dll.AD5372_Init()
+dll.AD5372_Reset()
 #import clr
 #sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 #clr.AddReference('AD5372')

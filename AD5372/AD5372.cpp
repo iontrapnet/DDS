@@ -162,9 +162,9 @@ BOOL GUIDFromString(LPCTSTR psz, LPGUID pguid)
     return bRet;
 }
 
-DLL bool AD5372_Init()
+DLL bool AD5372_Open()
 {
-	GUID guid;
+    GUID guid;
 	GUIDFromString("{D2958cfd-f0e1-4752-8aff-06d5b4411024}",&guid); 
 	USB = new CCyUSBDevice(NULL, guid);
 	int devices = USB->DeviceCount();
@@ -182,7 +182,11 @@ DLL bool AD5372_Init()
 	if (d == devices) {
 		printf("AD5372 is not connected!");
 		return false;
-	}	
+	}
+}
+
+DLL bool AD5372_Init()
+{
 	if (!LoadRAM("AD537xSPI.bin")) {
 		printf("downloading firmware failed!");
 		return false;
@@ -193,13 +197,14 @@ DLL bool AD5372_Init()
         printf("initialization failed!");
         return false;
     }
-	AD5372_Reset();
 	return true;
 }
 
 int main(int argc, char **argv)
 {
+    AD5372_Open();
 	AD5372_Init();
+	AD5372_Reset();
 	AD5372_DAC(0,argc > 1 ? atof(argv[1]) : 1.0);
 	AD5372_LDAC();
 	return 0;
